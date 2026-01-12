@@ -1,0 +1,167 @@
+@startuml
+title TanStack Router - 核心概念与生命周期全景图
+
+skinparam componentStyle uml2
+skinparam packageStyle rectangle
+skinparam handwritten false
+skinparam backgroundColor white
+
+' 定义颜色
+!define PRIMARY #E1F5FE
+!define SECONDARY #F3E5F5
+!define ACCENT #E8F5E9
+!define BORDER #455A64
+
+package "1. 路由配置 (Router Setup)" as Setup {
+  class "TanStackRouter" as Router {
+    + routeTree: Route (路由树)
+    + defaultPreload: 'intent' (默认预加载策略)
+    + context: TContext (上下文)
+  }
+
+  class "RouterProvider" as Provider {
+    + router: TanStackRouter
+  }
+  
+  note right of Provider: 包裹你的应用\n<RouterProvider router={router} />
+}
+
+package "2. 路由定义 (基于文件) (Route Definition)" as RouteDef {
+  class "RootRoute" as Root {
+    + createRootRoute()
+    + createRootRouteWithContext()
+  }
+
+  class "FileRoute" as FileRoute {
+    + createFileRoute('/path')
+  }
+
+  class "路由选项 (Route Options)" as Options {
+    + component: React.Component (组件)
+    + loader: (ctx) => Promise<T> (数据加载器)
+    + validateSearch: (search) => TSearch (Search参数验证)
+    + loaderDeps: (opts) => TDeps (Loader依赖)
+    + beforeLoad: (opts) => Promise<void> (加载前预检)
+    + errorComponent: Component (错误组件)
+    + pendingComponent: Component (加载中组件)
+  }
+
+  Root *-- FileRoute : 子路由 (children)
+  FileRoute *-- Options : 配置项
+  FileRoute --|> Root : 继承上下文
+}
+
+package "3. 运行时数据流 (导航) (Runtime Data Flow)" as Runtime {
+  interface "URL / 导航" as URL
+  
+  class "1. 解析 (Parsing)" as Parse {
+    parse Search Params (解析为JSON)
+  }
+
+  class "2. 验证 (Validation)" as Validate {
+    validateSearch(raw) -> TypedSearch
+    (将原始参数转换为类型化数据)
+  }
+
+  class "3. 依赖 (Dependencies)" as Deps {
+    loaderDeps({ search: TypedSearch }) -> Deps
+    (提取Loader需要的依赖)
+  }
+
+  class "4. 预检 (Pre-Check)" as Pre {
+    beforeLoad()
+    (权限检查, 重定向)
+  }
+
+  class "5. 数据加载 (Data Loading)" as Load {
+    loader({ deps, context, params })
+    (内置 SWR 缓存机制)
+  }
+
+  class "6. 渲染 (Rendering)" as Render {
+    <Route.Component />
+  }
+
+  URL --> Parse
+  Parse --> Validate : 原始 Search 参数
+  Validate --> Deps : 类型化 Search 参数
+  Deps --> Pre
+  Pre --> Load : 预检通过
+  Load --> Render : 数据准备就绪
+}
+
+package "4. Hooks 与使用 (Hooks & Usage)" as Hooks {
+  object "useParams()" as UseParams
+  object "useSearch()" as UseSearch
+  object "useLoaderData()" as UseData
+  object "useNavigate()" as UseNav
+  object "useRouter()" as UseRouter
+  
+  Render ..> UseParams : 读取路径参数
+  Render ..> UseSearch : 读取 Search 状态
+  Render ..> UseData : 读取 Loader 数据
+  Render ..> UseNav : 触发导航
+}
+
+' 关系连接
+Router --> Root : 管理
+Setup -[hidden]-> RouteDef
+RouteDef -[hidden]-> Runtime
+Runtime -[hidden]-> Hooks
+
+note bottom of Validate
+  <b>状态的单一事实来源</b>
+  Search params 在到达 loader 之前
+  必须先经过验证(validate)。
+end note
+
+note bottom of Load
+  <b>并行加载 (Parallel Loading)</b>
+  所有匹配路由的 Loader 
+  会并行运行，互不阻塞。
+end note
+
+@enduml
+
+@startuml
+title TanStack Router - 数据加载时序图 (Data Loading Sequence)
+actor 用户 (User)
+participant "Router (路由实例)" as R
+participant "Route (路由配置)" as C
+participant "Loader (加载器)" as L
+participant "Component (组件)" as UI
+
+用户 -> R : 导航至 /posts?page=2
+activate R
+
+R -> C : 解析 URL Params & Search
+R -> C : validateSearch(rawSearch) (验证参数)
+activate C
+C --> R : typedSearch { page: 2 } (类型化数据)
+deactivate C
+
+R -> C : loaderDeps({ search: typedSearch }) (计算依赖)
+activate C
+C --> R : deps { page: 2 }
+deactivate C
+
+R -> C : beforeLoad() (加载前钩子)
+note right: 权限检查、重定向\n通常发生在此处
+
+R -> L : loader({ deps, params, context })
+activate L
+note right: 与其他匹配的子路由\n并行运行
+L -> L : 检查缓存 (SWR)
+L -> 服务器 : 请求数据 Fetch Data(page=2)
+服务器 --> L : 返回数据
+L --> R : 返回 Loader Data
+deactivate L
+
+R -> UI : 渲染组件 (Render)
+activate UI
+UI -> UI : useLoaderData()
+UI --> 用户 : 显示页面
+deactivate UI
+deactivate R
+
+@enduml
