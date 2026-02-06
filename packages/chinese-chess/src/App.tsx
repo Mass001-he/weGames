@@ -7,26 +7,27 @@ function App() {
 	const { restartGame } = useGameStore();
 
 	return (
-		<div className='min-h-screen bg-stone-100 flex flex-col items-center py-8'>
-			<h1 className='text-3xl font-bold mb-6 font-serif text-stone-800'>
-				中国象棋 (Chinese Chess)
-			</h1>
+		<div className='h-dvh w-full bg-stone-100 flex flex-col items-center justify-center overflow-hidden gap-2 py-2 md:gap-4 md:py-4'>
+			{/* Header */}
+			<div className='shrink-0 text-center pointer-events-none opacity-50 hover:opacity-100 transition-opacity'>
+				<h1 className='text-xl md:text-2xl font-bold font-serif text-stone-800'>
+					中国象棋
+				</h1>
+			</div>
 
-			<ChessBoard />
+			<div className='flex-1 w-full flex items-center justify-center min-h-0 px-2'>
+				<ChessBoard />
+			</div>
 
-			<div className='mt-8 flex gap-4'>
+			<div className='shrink-0'>
 				<Button
 					onClick={restartGame}
 					variant='outline'
-					className='border-stone-400 hover:bg-stone-200'
+					size='sm'
+					className='border-stone-400 hover:bg-stone-200 bg-white/80 backdrop-blur-sm shadow-sm'
 				>
 					重新开始
 				</Button>
-			</div>
-
-			<div className='mt-8 text-sm text-stone-500 max-w-md text-center'>
-				<p>规则：红先黑后，困毙即负。</p>
-				<p>Built with React, TypeScript, Zustand, and Clean Architecture.</p>
 			</div>
 
 			<Toaster />

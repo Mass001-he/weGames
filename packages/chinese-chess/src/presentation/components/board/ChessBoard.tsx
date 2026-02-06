@@ -10,9 +10,10 @@ import { Position } from '../../../domain/entities/Position';
 import { Piece } from '../pieces/Piece';
 
 // SVG Board Component for better rendering
+// ViewBox updated to 950x1050 to add padding around the 900x1000 grid
 const BoardBackground = () => (
 	<svg
-		viewBox='0 0 900 1000'
+		viewBox='0 0 950 1050'
 		className='absolute inset-0 w-full h-full pointer-events-none z-0'
 		preserveAspectRatio='none'
 	>
@@ -37,31 +38,31 @@ const BoardBackground = () => (
 			</pattern>
 		</defs>
 
-		{/* Base Background */}
-		<rect x='0' y='0' width='900' height='1000' fill='#eecfa1' />
+		{/* Base Background - Fills the new larger area */}
+		<rect x='0' y='0' width='950' height='1050' fill='#eecfa1' />
 
-		{/* Border */}
+		{/* Border - Adjusted for 950x1050 */}
 		<rect
 			x='10'
 			y='10'
-			width='880'
-			height='980'
+			width='930'
+			height='1030'
 			fill='none'
 			stroke='#5d4037'
 			strokeWidth='4'
 		/>
 		<rect
-			x='15'
-			y='15'
-			width='870'
-			height='970'
+			x='18'
+			y='18'
+			width='914'
+			height='1014'
 			fill='none'
 			stroke='#5d4037'
 			strokeWidth='2'
 		/>
 
-		{/* Grid Lines Group */}
-		<g transform='translate(50, 50)' stroke='#5d4037' strokeWidth='2'>
+		{/* Grid Lines Group - Shifted by (25, 25) to center the 900x1000 grid */}
+		<g transform='translate(75, 75)' stroke='#5d4037' strokeWidth='2'>
 			{/* Horizontal Lines (10 lines) */}
 			{Array.from({ length: 10 }, (_, k) => k).map((i) => (
 				<line key={`h-${i}`} x1='0' y1={i * 100} x2='800' y2={i * 100} />
@@ -97,7 +98,6 @@ const BoardBackground = () => (
 			<line x1='500' y1='700' x2='300' y2='900' />
 
 			{/* Cross Markers (The little corner marks) */}
-			{/* We can add these later for polish, e.g. at (1,2), (7,2) etc. */}
 			{[
 				// Cannons
 				[1, 2],
@@ -149,7 +149,7 @@ const BoardBackground = () => (
 		</g>
 
 		{/* River Text */}
-		<g transform='translate(50, 50)'>
+		<g transform='translate(75, 75)'>
 			<text
 				x='200'
 				y='470'
@@ -201,11 +201,19 @@ export const ChessBoard: React.FC = () => {
 		selectPiece(new Position(x, y));
 	};
 
+	// New Dimensions
+	const VIEWBOX_WIDTH = 950;
+	const VIEWBOX_HEIGHT = 1050;
+	const GRID_WIDTH = 900;
+	const GRID_HEIGHT = 1000;
+	const PADDING_X = 25;
+	const PADDING_Y = 25;
+
 	return (
-		<div className='flex flex-col items-center gap-6'>
-			{/* Game Status Banner */}
-			<div className='bg-white/80 backdrop-blur-sm px-8 py-3 rounded-full shadow-lg border border-stone-200'>
-				<div className='text-xl font-bold font-serif tracking-widest'>
+		<div className='w-full h-full flex flex-col items-center justify-center gap-2 md:gap-4'>
+			{/* Game Status Banner - Compact on mobile */}
+			<div className='shrink-0 bg-white/80 backdrop-blur-sm px-4 py-2 md:px-8 md:py-3 rounded-full shadow-lg border border-stone-200 z-20'>
+				<div className='text-lg md:text-xl font-bold font-serif tracking-widest'>
 					{winner ? (
 						<span
 							className={
@@ -218,12 +226,12 @@ export const ChessBoard: React.FC = () => {
 						</span>
 					) : (
 						<span className='flex items-center gap-2'>
-							<span className='text-stone-500 text-base font-normal'>
+							<span className='text-stone-500 text-sm md:text-base font-normal'>
 								当前回合
 							</span>
 							<span
 								className={cn(
-									'text-2xl transition-colors duration-300',
+									'text-xl md:text-2xl transition-colors duration-300',
 									currentTurn === PieceColor.RED
 										? 'text-red-600'
 										: 'text-stone-900',
@@ -236,64 +244,67 @@ export const ChessBoard: React.FC = () => {
 				</div>
 			</div>
 
-			{/* Board Container */}
-			<div
-				className='relative p-3 md:p-5 rounded-lg shadow-2xl select-none bg-[#5d4037]' // Dark wood border container
-				style={{
-					width: 'min(95vw, 500px)',
-					// We don't set aspectRatio here because padding affects inner ratio.
-					// Let the inner container define the ratio.
-				}}
-			>
-				{/* Inner Board Area - Strictly 9:10 ratio to match SVG viewBox "0 0 900 1000" */}
+			{/* Board Container - Responsive & Maximized */}
+			<div className='flex-1 w-full flex items-center justify-center min-h-0 relative'>
 				<div
-					className='relative w-full overflow-hidden rounded bg-[#eecfa1]'
+					className='relative rounded-lg shadow-2xl select-none bg-[#5d4037] shrink-0'
 					style={{
-						aspectRatio: '9/10',
+						aspectRatio: `${VIEWBOX_WIDTH}/${VIEWBOX_HEIGHT}`,
+						maxHeight: '100%',
+						maxWidth: '100%',
+						// These ensure the board tries to fill the space but respects aspect ratio and container limits
+						height: '100%',
+						width: 'auto',
 					}}
 				>
-					<BoardBackground />
+					{/* Inner Board Area */}
+					<div className='relative w-full h-full overflow-hidden rounded bg-[#eecfa1]'>
+						<BoardBackground />
 
-					{/* Grid for Interaction & Pieces */}
-					<div
-						className='absolute inset-0 z-10'
-						style={{
-							display: 'grid',
-							gridTemplateColumns: `repeat(${BOARD_WIDTH}, 1fr)`,
-							gridTemplateRows: `repeat(${BOARD_HEIGHT}, 1fr)`,
-						}}
-					>
-						{cells.map(({ x, y }) => {
-							const position = new Position(x, y);
-							const piece = board.getPieceAt(position);
-							const isSelected = selectedPosition?.equals(position);
-							const isValidMove = validMoves.some((m) => m.equals(position));
+						{/* Grid for Interaction & Pieces */}
+						{/* Positioned absolutely to match the SVG grid coordinates */}
+						<div
+							className='absolute z-10'
+							style={{
+								display: 'grid',
+								gridTemplateColumns: `repeat(${BOARD_WIDTH}, 1fr)`,
+								gridTemplateRows: `repeat(${BOARD_HEIGHT}, 1fr)`,
+								left: `${(PADDING_X / VIEWBOX_WIDTH) * 100}%`,
+								top: `${(PADDING_Y / VIEWBOX_HEIGHT) * 100}%`,
+								width: `${(GRID_WIDTH / VIEWBOX_WIDTH) * 100}%`,
+								height: `${(GRID_HEIGHT / VIEWBOX_HEIGHT) * 100}%`,
+							}}
+						>
+							{cells.map(({ x, y }) => {
+								const position = new Position(x, y);
+								const piece = board.getPieceAt(position);
+								const isSelected = selectedPosition?.equals(position);
+								const isValidMove = validMoves.some((m) => m.equals(position));
 
-							return (
-								<button
-									key={`${x}-${y}`}
-									type='button'
-									className='relative flex items-center justify-center w-full h-full border-none p-0 bg-transparent outline-none cursor-pointer'
-									onClick={() => handleCellClick(x, y)}
-								>
-									{/* Piece Layer */}
-									<div className='z-10 relative w-[90%] h-[90%] flex items-center justify-center'>
-										{piece && <Piece piece={piece} isSelected={isSelected} />}
+								return (
+									<button
+										key={`${x}-${y}`}
+										type='button'
+										className='relative flex items-center justify-center w-full h-full border-none p-0 bg-transparent outline-none cursor-pointer'
+										onClick={() => handleCellClick(x, y)}
+									>
+										{/* Piece Layer */}
+										<div className='z-10 relative w-[90%] h-[90%] flex items-center justify-center'>
+											{piece && <Piece piece={piece} isSelected={isSelected} />}
 
-										{/* Valid Move Indicator (Dot) */}
-										{isValidMove && !piece && (
-											<div className='w-3 h-3 md:w-4 md:h-4 bg-green-600/60 rounded-full shadow-[0_0_5px_rgba(255,255,255,0.5)] animate-pulse' />
-										)}
-										{/* Capture Indicator (Ring) */}
-										{isValidMove && piece && (
-											<div className='absolute inset-0 -m-1 rounded-full border-4 border-red-500/60 animate-ping opacity-75 pointer-events-none' />
-										)}
-
-										{/* Previous Move Highlight (Optional - can be added later) */}
-									</div>
-								</button>
-							);
-						})}
+											{/* Valid Move Indicator (Dot) */}
+											{isValidMove && !piece && (
+												<div className='w-3 h-3 md:w-4 md:h-4 bg-green-600/60 rounded-full shadow-[0_0_5px_rgba(255,255,255,0.5)] animate-pulse' />
+											)}
+											{/* Capture Indicator (Ring) */}
+											{isValidMove && piece && (
+												<div className='absolute inset-0 -m-1 rounded-full border-4 border-red-500/60 animate-ping opacity-75 pointer-events-none' />
+											)}
+										</div>
+									</button>
+								);
+							})}
+						</div>
 					</div>
 				</div>
 			</div>

@@ -44,6 +44,7 @@ export const Piece: React.FC<PieceProps> = ({ piece, isSelected, onClick }) => {
 					: 'hover:scale-105 hover:-translate-y-0.5 z-10 drop-shadow-md',
 			)}
 			style={{
+				containerType: 'size',
 				// Realistic 3D Cylinder Effect with CSS Gradients and Shadows
 				background: isRed
 					? 'radial-gradient(circle at 30% 30%, #ffefd5, #eecfa1 60%, #d2b48c)' // Light wood for Red? Or standard plastic? Let's stick to wood-like.
@@ -53,8 +54,6 @@ export const Piece: React.FC<PieceProps> = ({ piece, isSelected, onClick }) => {
             inset -2px -2px 4px rgba(0,0,0,0.2),
             1px 2px 4px rgba(0,0,0,0.4)
         `,
-				// For distinct Red/Black pieces, usually Red uses Red text, Black uses Black text.
-				// The piece body itself can be wood color.
 			}}
 		>
 			{/* Outer Ring (Carved effect) */}
@@ -77,7 +76,7 @@ export const Piece: React.FC<PieceProps> = ({ piece, isSelected, onClick }) => {
 				{/* Text with "Etched" effect (Inner Shadow) */}
 				<span
 					className={cn(
-						'font-serif font-bold text-xl md:text-2xl lg:text-3xl leading-none',
+						'font-serif font-bold leading-none select-none pointer-events-none text-[50cqw]',
 						isRed ? 'text-red-700' : 'text-stone-900',
 					)}
 					style={{
